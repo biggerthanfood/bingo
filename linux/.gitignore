@@ -1,1 +1,12 @@
 flutter/ephemeral
+flutter/generated_plugins.cmake
+flutter/generated_plugin_registrant.cc
+flutter/generated_plugin_registrant.h
+.buildlog
+.history
+.svn/
+migrate_working_dir/
+
+**/Flutter/ephemeral/
+**/Flutter/GeneratedPluginRegistrant.*
+**/flutter/generated_plugins.cmake

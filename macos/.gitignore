@@ -2,6 +2,7 @@
 **/Flutter/ephemeral/
 **/Flutter/Generated.xcconfig
 **/Flutter/GeneratedPluginRegistrant.*
+**/flutter/generated_plugins.cmake
 
 # Xcode-related
 *.mode1v3

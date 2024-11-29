@@ -30,10 +30,13 @@ migrate_working_dir/
 /build/
 *.lock
 .packages
+**/Flutter/GeneratedPluginRegistrant.*
+**/flutter/generated_plugins.cmake
 
 # Firebase related
 **/android/**/google-services.json
 **/ios/**/GoogleService-Info.plist
+**/macos/**/GoogleService-Info.plist
 **/lib/firebase_options.dart
 .firebase/
 
@@ -99,8 +102,9 @@ app.*.map.json
 
 # Platform specific files
 web/firebase-messaging-sw.js
-windows/flutter/generated_plugin_registrant.*
-linux/flutter/generated_plugin_registrant.*
+**/windows/flutter/generated_plugins.cmake
+**/linux/flutter/generated_plugins.cmake
+**/macos/flutter/generated_plugins.cmake
 
 # Exceptions to the rules
 !**/ios/**/default.mode1v3

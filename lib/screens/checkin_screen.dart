@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import '../services/maps_service.dart';
 
 class CheckInScreen extends StatelessWidget {
   const CheckInScreen({super.key});
@@ -23,7 +24,6 @@ class CheckInScreen extends StatelessWidget {
               isDefaultAction: true,
               child: const Text('Confirm'),
               onPressed: () {
-                // TODO: Implement check-in logic
                 Navigator.pop(context);
                 _showSuccessMessage(context);
               },
@@ -111,7 +111,7 @@ class CheckInScreen extends StatelessWidget {
                           Text('Manual', style: TextStyle(fontSize: 12)),
                         ],
                       ),
-                      onPressed: () {},
+                      onPressed: () => _showManualCheckInDialog(context),
                     ),
                   ),
                   Container(
@@ -148,7 +148,11 @@ class CheckInScreen extends StatelessWidget {
                         ],
                       ),
                       onPressed: () {
-                        // TODO: Navigate to map view
+                        MapsService.openAppleMaps(
+                          latitude: 37.7749, // Example coordinates
+                          longitude: -122.4194,
+                          name: "Restaurant Name"
+                        );
                       },
                     ),
                   ),
