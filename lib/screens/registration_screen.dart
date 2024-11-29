@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import '../services/auth_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -14,6 +16,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _authService = AuthService();
   bool _isLoading = false;
 
   @override
@@ -31,18 +34,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() => _isLoading = true);
       
       try {
-        // TODO: Implement registration logic
-        await Future.delayed(const Duration(seconds: 2)); // Simulated delay
+        await _authService.registerWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+        );
         
         if (mounted) {
-          // TODO: Navigate to next screen after successful registration
-          Navigator.pop(context); // Return to login screen for now
+          _showSuccessMessage('Registration successful! Please login.');
+          Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Registration failed: ${e.toString()}')),
-          );
+          _showErrorMessage(e.toString());
         }
       } finally {
         if (mounted) {
@@ -52,11 +57,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
+  void _showErrorMessage(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessMessage(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Success'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Account'),
+      appBar: CupertinoNavigationBar(
+        middle: const Text('Create Account'),
+        border: null,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -76,7 +114,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _firstNameController,
                   decoration: const InputDecoration(
                     labelText: 'First Name',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: Icon(CupertinoIcons.person),
                   ),
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
@@ -91,7 +129,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _lastNameController,
                   decoration: const InputDecoration(
                     labelText: 'Last Name',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: Icon(CupertinoIcons.person),
                   ),
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
@@ -106,9 +144,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    prefixIcon: Icon(CupertinoIcons.mail),
                   ),
                   keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
@@ -125,7 +164,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _passwordController,
                   decoration: const InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline),
+                    prefixIcon: Icon(CupertinoIcons.lock),
                   ),
                   obscureText: true,
                   validator: (value) {
@@ -143,7 +182,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _confirmPasswordController,
                   decoration: const InputDecoration(
                     labelText: 'Confirm Password',
-                    prefixIcon: Icon(Icons.lock_outline),
+                    prefixIcon: Icon(CupertinoIcons.lock),
                   ),
                   obscureText: true,
                   validator: (value) {
@@ -157,18 +196,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegistration,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Submit'),
+                SizedBox(
+                  height: 50,
+                  child: CupertinoButton.filled(
+                    onPressed: _isLoading ? null : _handleRegistration,
+                    child: _isLoading
+                        ? const CupertinoActivityIndicator(color: Colors.white)
+                        : const Text('Submit'),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                TextButton(
+                CupertinoButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Already have an account? Login'),
                 ),

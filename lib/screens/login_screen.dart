@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import '../services/auth_service.dart';
 import 'registration_screen.dart';
+import 'checkin_screen.dart'; // Add this import
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,13 +13,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -26,13 +30,23 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = true);
       
       try {
-        // TODO: Implement your login logic here
-        await Future.delayed(const Duration(seconds: 2)); // Simulated delay
+        await _authService.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+        
+        if (mounted) {
+          // Replace login screen with check-in screen
+          Navigator.pushReplacement(
+            context,
+            CupertinoPageRoute(
+              builder: (context) => const CheckInScreen(),
+            ),
+          );
+        }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login failed: ${e.toString()}')),
-          );
+          _showErrorMessage(e.toString());
         }
       } finally {
         if (mounted) {
@@ -42,10 +56,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _navigateToRegistration() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+  void _showErrorMessage(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
     );
   }
 
@@ -69,14 +92,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
-                    controller: _usernameController,
+                    controller: _emailController,
                     decoration: const InputDecoration(
-                      labelText: 'Username',
-                      prefixIcon: Icon(Icons.person_outline),
+                      labelText: 'Email',
+                      prefixIcon: Icon(CupertinoIcons.mail),
                     ),
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your username';
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          .hasMatch(value)) {
+                        return 'Please enter a valid email address';
                       }
                       return null;
                     },
@@ -86,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     decoration: const InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock_outline),
+                      prefixIcon: Icon(CupertinoIcons.lock),
                     ),
                     obscureText: true,
                     validator: (value) {
@@ -99,31 +128,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: TextButton(
+                    child: CupertinoButton(
                       onPressed: () {
-                        // TODO: Navigate to forgot password screen
+                        // TODO: Implement forgot password
                       },
+                      padding: EdgeInsets.zero,
                       child: const Text('Forgot Password?'),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _handleLogin,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Login'),
+                  SizedBox(
+                    height: 50,
+                    child: CupertinoButton.filled(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      child: _isLoading
+                          ? const CupertinoActivityIndicator(color: Colors.white)
+                          : const Text('Login'),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("New User?"),
-                      TextButton(
-                        onPressed: _navigateToRegistration,
+                      CupertinoButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (context) => const RegistrationScreen(),
+                            ),
+                          );
+                        },
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: const Text('Create Account'),
                       ),
                     ],

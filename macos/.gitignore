@@ -1,7 +1,32 @@
 # Flutter-related
 **/Flutter/ephemeral/
-**/Pods/
+**/Flutter/Generated.xcconfig
+**/Flutter/GeneratedPluginRegistrant.*
 
 # Xcode-related
-**/dgph
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+*.xccheckout
+*.xcscmblueprint
+**/.xcode.env.local
 **/xcuserdata/
+**/*.xcodeproj/*
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace/
+**/dgph
+.DS_Store
+
+# CocoaPods
+**/Pods/
+Podfile.lock
+*.xcconfig
+.symlinks/
+
+# Firebase
+**/GoogleService-Info.plist
