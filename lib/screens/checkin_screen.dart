@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../services/maps_service.dart';
+import 'bingo_card_screen.dart';
 
 class CheckInScreen extends StatelessWidget {
   const CheckInScreen({super.key});
@@ -129,7 +130,12 @@ class CheckInScreen extends StatelessWidget {
                         ],
                       ),
                       onPressed: () {
-                        // TODO: Navigate to bingo card view
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => BingoCardScreen(),
+                          ),
+                        );
                       },
                     ),
                   ),
