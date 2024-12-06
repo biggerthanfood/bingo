@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import '../services/restaurant_state.dart';
 
-class BingoCardScreen extends StatelessWidget {
+class BingoCardScreen extends StatefulWidget {
+  final Function(int)? onRestaurantMarked;
+  
+  const BingoCardScreen({
+    super.key,
+    this.onRestaurantMarked,
+  });
+
+  @override
+  State<BingoCardScreen> createState() => _BingoCardScreenState();
+}
+
+class _BingoCardScreenState extends State<BingoCardScreen> {
+  final RestaurantState _state = RestaurantState();
+  final GlobalKey _gridKey = GlobalKey();
+
   final List<String> restaurants = [
     "JOLA'S NIGERIAN KITCHEN (EDMOND)", 
     "CITY JERK GRILL (OKC)", 
@@ -12,10 +28,10 @@ class BingoCardScreen extends StatelessWidget {
     "NOT CHO CHEESECAKE (BETHANY)", 
     "THE CRIMSON MELT (MOORE)",
     "SWEET SIPS & STICKS (NORMAN)",
-    "FREE SPACE",
+    "HEAVENLEE BBQ (OKC)",
     "AUNTIES SOUL FOOD (MWC)", 
     "ANDEEZ DONUTS (EDMOND)",
-    "HEAVENLEE BBQ (OKC)", 
+    "FREE SPACE", 
     "THE HIVE EATERY (EDMOND)", 
     "PINKBERRY FROZEN YOGURT (NORMAN)",
     "BIG O'S PORK & DREAMS (MWC)",
@@ -30,7 +46,121 @@ class BingoCardScreen extends StatelessWidget {
     "Restaurant 25"
   ];
 
-  BingoCardScreen({super.key});
+  @override
+  void initState() {
+    super.initState();
+    _state.permanentlyMarkRestaurant(12);
+  }
+
+  void markRestaurant(int index) {
+    if (index == 12) {
+      return;
+    }
+    if (index >= 0 && index < restaurants.length) {
+      setState(() {
+        _state.markRestaurant(index);
+        
+        if (_state.checkForBingo()) {
+          _showBingoAnimation();
+          _state.setBingoShown();
+        }
+      });
+      
+      widget.onRestaurantMarked?.call(index);
+    }
+  }
+
+  void _showBingoAnimation() {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  CupertinoIcons.star_fill,
+                  color: Colors.amber,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'BINGO!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                CupertinoButton(
+                  child: const Text('Continue Playing'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBingoMarker(int index) {
+    bool isPartOfBingo = _state.getWinningLines().any((line) => line.contains(index));
+    Color bingoColor = isPartOfBingo ? Colors.green : Colors.red;
+
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: bingoColor.withOpacity(0.85),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: bingoColor == Colors.red 
+                  ? Colors.red.shade900 
+                  : Colors.green.shade900,
+              width: 2
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            gradient: RadialGradient(
+              colors: bingoColor == Colors.red
+                  ? [Colors.red.shade400, Colors.red.shade700]
+                  : [Colors.green.shade400, Colors.green.shade700],
+              center: Alignment.topLeft,
+              radius: 1.5,
+            ),
+          ),
+        ),
+        if (isPartOfBingo)
+          const Center(
+            child: Icon(
+              Icons.check,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +173,7 @@ class BingoCardScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           const Text(
-            'BLACK RESTAURANT BINGO',
+            'RESTAURANT BINGO',
             style: TextStyle(
               fontSize: 24, 
               fontWeight: FontWeight.bold,
@@ -63,6 +193,7 @@ class BingoCardScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: GridView.builder(
+                key: _gridKey,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 5,
                   childAspectRatio: 1,
@@ -72,43 +203,56 @@ class BingoCardScreen extends StatelessWidget {
                 itemCount: 25,
                 itemBuilder: (context, index) {
                   Color borderColor;
-                  if (index < 5) borderColor = Colors.black;
-                  else if (index < 10) borderColor = Colors.red;
-                  else if (index < 15) borderColor = Colors.green;
-                  else if (index < 20) borderColor = Colors.blue;
-                  else borderColor = Colors.purple;
+                  if (index < 5) {
+                    borderColor = Colors.black;
+                  } else if (index < 10) {
+                    borderColor = Colors.red;
+                  } else if (index < 15) {
+                    borderColor = Colors.green;
+                  } else if (index < 20) {
+                    borderColor = Colors.blue;
+                  } else {
+                    borderColor = Colors.purple;
+                  }
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: borderColor, width: 2),
-                      color: index == 12 ? const Color(0xFFF5F5F5) : Colors.white,
-                    ),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Text(
-                              restaurants[index],
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: index == 12 ? FontWeight.bold : FontWeight.normal,
+                  return GestureDetector(
+                    onTap: () => markRestaurant(index),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor, width: 2),
+                        color: index == 12 ? const Color(0xFFF5F5F5) : Colors.white,
+                      ),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Text(
+                                restaurants[index],
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: index == 12 ? FontWeight.bold : FontWeight.normal,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        if (index != 12 && (index == 1 || index == 5 || index == 11)) 
-                          Positioned(
-                            right: 2,
-                            bottom: 2,
-                            child: Icon(
-                              Icons.eco,
-                              size: 12,
-                              color: Colors.green[700],
+                          if (_state.isCheckedIn(index))
+                            Positioned.fill(
+                              child: _buildBingoMarker(index),
                             ),
-                          ),
-                      ],
+                          if (index != 12 && (index == 1 || index == 5 || index == 11)) 
+                            Positioned(
+                              right: 2,
+                              bottom: 2,
+                              child: Icon(
+                                Icons.eco,
+                                size: 12,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   );
                 },

@@ -1,38 +1,128 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../services/maps_service.dart';
+import '../services/restaurant_state.dart';
 import 'bingo_card_screen.dart';
 
-class CheckInScreen extends StatelessWidget {
+class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
 
-  void _showManualCheckInDialog(BuildContext context) {
+  @override
+  State<CheckInScreen> createState() => _CheckInScreenState();
+}
+
+class _CheckInScreenState extends State<CheckInScreen> {
+  final RestaurantState _state = RestaurantState();
+
+  final List<String> restaurants = [
+    "JOLA'S NIGERIAN KITCHEN (EDMOND)", 
+    "CITY JERK GRILL (OKC)", 
+    "BIG O'S PORK & DREAMS (EDMOND)", 
+    "EASTSIDE PIZZA HOUSE (OKC)",
+    "JUST PUT A EGG ON IT (OKC)",
+    "TASTE OF AFRICA (OKC)", 
+    "NOT CHO CHEESECAKE (BETHANY)", 
+    "THE CRIMSON MELT (MOORE)",
+    "SWEET SIPS & STICKS (NORMAN)",
+    "HEAVENLEE BBQ (OKC)",
+    "AUNTIES SOUL FOOD (MWC)", 
+    "ANDEEZ DONUTS (EDMOND)",
+    "FREE SPACE", 
+    "THE HIVE EATERY (EDMOND)", 
+    "PINKBERRY FROZEN YOGURT (NORMAN)",
+    "BIG O'S PORK & DREAMS (MWC)"
+  ];
+
+  void _handleCheckIn(int restaurantIndex) {
+    setState(() {
+      _state.markRestaurant(restaurantIndex);
+      
+      if (_state.checkForBingo()) {
+        _showBingoAnimation();
+        _state.setBingoShown();
+      }
+    });
+    
+    _showSuccessMessage(context);
+  }
+
+  void _showBingoAnimation() {
     showCupertinoDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: const Text('Manual Check-in'),
-          content: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Text('Confirm that you visited this restaurant?'),
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  CupertinoIcons.star_fill,
+                  color: Colors.amber,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'BINGO!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                CupertinoButton(
+                  child: const Text('Continue Playing'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('Confirm'),
-              onPressed: () {
-                Navigator.pop(context);
-                _showSuccessMessage(context);
-              },
-            ),
-          ],
         );
       },
     );
+  }
+
+  void _showRestaurantSelectionDialog(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: const Text('Select Restaurant'),
+          message: const Text('Choose the restaurant you visited'),
+          actions: List<CupertinoActionSheetAction>.generate(
+            restaurants.length,
+            (index) => CupertinoActionSheetAction(
+              child: Text(restaurants[index]),
+              onPressed: () {
+                Navigator.pop(context, index);
+              },
+            ),
+          ),
+          cancelButton: CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+        );
+      },
+    ).then((selectedIndex) {
+      if (selectedIndex != null) {
+        _handleCheckIn(selectedIndex);
+      }
+    });
   }
 
   void _showSuccessMessage(BuildContext context) {
@@ -83,9 +173,9 @@ class CheckInScreen extends StatelessWidget {
                     color: Colors.grey,
                   ),
                   const SizedBox(height: 16),
-                  CupertinoButton(
-                    onPressed: () => _showManualCheckInDialog(context),
-                    child: const Text('Manual Check-in'),
+                  CupertinoButton.filled(
+                    onPressed: () => _showRestaurantSelectionDialog(context),
+                    child: const Text('Check In to Restaurant'),
                   ),
                 ],
               ),
@@ -109,10 +199,10 @@ class CheckInScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: const [
                           Icon(CupertinoIcons.square_list),
-                          Text('Manual', style: TextStyle(fontSize: 12)),
+                          Text('Check In', style: TextStyle(fontSize: 12)),
                         ],
                       ),
-                      onPressed: () => _showManualCheckInDialog(context),
+                      onPressed: () => _showRestaurantSelectionDialog(context),
                     ),
                   ),
                   Container(
@@ -133,7 +223,11 @@ class CheckInScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           CupertinoPageRoute(
-                            builder: (context) => BingoCardScreen(),
+                            builder: (context) => BingoCardScreen(
+                              onRestaurantMarked: (index) {
+                                setState(() {});
+                              },
+                            ),
                           ),
                         );
                       },
@@ -155,7 +249,7 @@ class CheckInScreen extends StatelessWidget {
                       ),
                       onPressed: () {
                         MapsService.openAppleMaps(
-                          latitude: 37.7749, // Example coordinates
+                          latitude: 37.7749,
                           longitude: -122.4194,
                           name: "Restaurant Name"
                         );
