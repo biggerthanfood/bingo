@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../services/maps_service.dart';
 import '../services/restaurant_state.dart';
 import 'bingo_card_screen.dart';
+import 'camera_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -13,6 +14,7 @@ class CheckInScreen extends StatefulWidget {
 
 class _CheckInScreenState extends State<CheckInScreen> {
   final RestaurantState _state = RestaurantState();
+  String? _lastPhotoPath;
 
   final List<String> restaurants = [
     "JOLA'S NIGERIAN KITCHEN (EDMOND)", 
@@ -42,6 +44,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
         _state.setBingoShown();
       }
     });
+    
+    // Handle photo if one was taken
+    if (_lastPhotoPath != null) {
+      // TODO: Handle the photo (e.g., upload to Firebase Storage)
+      print('Check-in photo path: $_lastPhotoPath');
+      _lastPhotoPath = null; // Reset after handling
+    }
     
     _showSuccessMessage(context);
   }
@@ -131,9 +140,16 @@ class _CheckInScreenState extends State<CheckInScreen> {
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
           title: const Text('Success'),
-          content: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Text('Check-in recorded successfully!'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text('Check-in recorded successfully!'),
+              ),
+              if (_lastPhotoPath != null)
+                const Text('Photo saved with check-in'),
+            ],
           ),
           actions: [
             CupertinoDialogAction(
@@ -150,15 +166,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CupertinoNavigationBar(
-        middle: const Text('Check In'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: const Icon(CupertinoIcons.camera),
-          onPressed: () {
-            // TODO: Implement photo upload
-          },
-        ),
+      appBar: const CupertinoNavigationBar(
+        middle: Text('Check In'),
       ),
       body: Column(
         children: [
@@ -167,16 +176,49 @@ class _CheckInScreenState extends State<CheckInScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    CupertinoIcons.building_2_fill,
+                  Icon(
+                    _lastPhotoPath != null 
+                      ? CupertinoIcons.camera_fill
+                      : CupertinoIcons.building_2_fill,
                     size: 100,
-                    color: Colors.grey,
+                    color: _lastPhotoPath != null ? Colors.green : Colors.grey,
                   ),
                   const SizedBox(height: 16),
                   CupertinoButton.filled(
-                    onPressed: () => _showRestaurantSelectionDialog(context),
-                    child: const Text('Check In to Restaurant'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          fullscreenDialog: true,
+                          builder: (context) => CameraScreen(
+                            onPhotoTaken: (String photoPath) {
+                              setState(() {
+                                _lastPhotoPath = photoPath;
+                              });
+                              _showRestaurantSelectionDialog(context);
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Take Photo'),
                   ),
+                  const SizedBox(height: 16),
+                  CupertinoButton(
+                    onPressed: () => _showRestaurantSelectionDialog(context),
+                    child: const Text('Check In Without Photo'),
+                  ),
+                  if (_lastPhotoPath != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Photo ready for check-in',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
