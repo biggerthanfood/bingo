@@ -49,7 +49,7 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
   @override
   void initState() {
     super.initState();
-    _state.permanentlyMarkRestaurant(12);
+    _state.permanentlyMarkRestaurant(12); // Mark FREE SPACE
   }
 
   void markRestaurant(int index) {
@@ -60,7 +60,12 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
       setState(() {
         _state.markRestaurant(index);
         
-        if (_state.checkForBingo()) {
+        // Check for blackout (all spaces marked)
+        bool isBlackout = _state.checkedRestaurants.length == 25;
+        
+        if (isBlackout) {
+          _showBingoAnimation(isBlackout: true);
+        } else if (_state.checkForBingo()) {
           _showBingoAnimation();
           _state.setBingoShown();
         }
@@ -70,7 +75,7 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
     }
   }
 
-  void _showBingoAnimation() {
+  void _showBingoAnimation({bool isBlackout = false}) {
     showCupertinoDialog(
       context: context,
       barrierDismissible: true,
@@ -79,7 +84,7 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isBlackout ? Colors.black : Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -91,22 +96,29 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  CupertinoIcons.star_fill,
+                Icon(
+                  isBlackout ? CupertinoIcons.star_circle_fill : CupertinoIcons.star_fill,
                   color: Colors.amber,
                   size: 48,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'BINGO!',
+                Text(
+                  isBlackout ? 'Congratulations!\nYou\'re A Bingo Champ!' : 'BINGO!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: isBlackout ? Colors.white : Colors.black,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 CupertinoButton(
-                  child: const Text('Continue Playing'),
+                  child: Text(
+                    'Continue',
+                    style: TextStyle(
+                      color: isBlackout ? Colors.white : CupertinoColors.activeBlue,
+                    ),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -119,7 +131,8 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
 
   Widget _buildBingoMarker(int index) {
     bool isPartOfBingo = _state.getWinningLines().any((line) => line.contains(index));
-    Color bingoColor = isPartOfBingo ? Colors.green : Colors.red;
+    bool isBlackout = _state.checkedRestaurants.length == 25;
+    Color bingoColor = isBlackout ? Colors.black : (isPartOfBingo ? Colors.green : Colors.red);
     String restaurantName = restaurants[index];
 
     return Stack(
@@ -133,7 +146,7 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
             border: Border.all(
               color: bingoColor == Colors.red 
                   ? Colors.red.shade900 
-                  : Colors.green.shade900,
+                  : (bingoColor == Colors.black ? Colors.white : Colors.green.shade900),
               width: 2
             ),
             boxShadow: [
@@ -146,36 +159,35 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
             gradient: RadialGradient(
               colors: bingoColor == Colors.red
                   ? [Colors.red.shade400, Colors.red.shade700]
-                  : [Colors.green.shade400, Colors.green.shade700],
+                  : (bingoColor == Colors.black 
+                      ? [Colors.black87, Colors.black]
+                      : [Colors.green.shade400, Colors.green.shade700]),
               center: Alignment.topLeft,
               radius: 1.5,
             ),
           ),
         ),
-        // Text overlay with better visibility
+        // Restaurant name text in front of circle
         Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              restaurantName,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                shadows: [
-                  Shadow(
-                    offset: const Offset(1, 1),
-                    blurRadius: 2.0,
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ],
-              ),
+          child: Text(
+            restaurantName,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  blurRadius: 2,
+                  color: Colors.black,
+                  offset: Offset(1, 1),
+                ),
+              ],
             ),
           ),
         ),
         // Bingo indicator
-        if (isPartOfBingo)
+        if (isPartOfBingo && !isBlackout)
           Positioned(
             top: 4,
             right: 4,
