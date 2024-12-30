@@ -120,9 +120,11 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
   Widget _buildBingoMarker(int index) {
     bool isPartOfBingo = _state.getWinningLines().any((line) => line.contains(index));
     Color bingoColor = isPartOfBingo ? Colors.green : Colors.red;
+    String restaurantName = restaurants[index];
 
     return Stack(
       children: [
+        // Background chip
         Container(
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
@@ -150,12 +152,48 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
             ),
           ),
         ),
+        // Text overlay with better visibility
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              restaurantName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    offset: const Offset(1, 1),
+                    blurRadius: 2.0,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Bingo indicator
         if (isPartOfBingo)
-          const Center(
-            child: Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 20,
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.green.shade900,
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.check,
+                color: Colors.green.shade900,
+                size: 12,
+              ),
             ),
           ),
       ],
