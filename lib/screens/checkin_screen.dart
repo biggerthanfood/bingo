@@ -112,7 +112,23 @@ class _CheckInScreenState extends State<CheckInScreen> {
           actions: List<CupertinoActionSheetAction>.generate(
             restaurants.length,
             (index) => CupertinoActionSheetAction(
-              child: Text(restaurants[index]),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      restaurants[index],
+                      style: const TextStyle(color: CupertinoColors.activeBlue),
+                    ),
+                  ),
+                  if (_state.isCheckedIn(index))
+                    const Icon(
+                      CupertinoIcons.checkmark_circle_fill,
+                      color: CupertinoColors.activeGreen,
+                      size: 20,
+                    ),
+                ],
+              ),
               onPressed: () {
                 Navigator.pop(context, index);
               },
