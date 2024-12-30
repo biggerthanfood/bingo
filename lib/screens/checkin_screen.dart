@@ -1,3 +1,5 @@
+// File: lib/screens/checkin_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../services/maps_service.dart';
@@ -15,6 +17,7 @@ class CheckInScreen extends StatefulWidget {
 class _CheckInScreenState extends State<CheckInScreen> {
   final RestaurantState _state = RestaurantState();
   String? _lastPhotoPath;
+  final TextEditingController _receiptAmountController = TextEditingController();
 
   final List<String> restaurants = [
     "JOLA'S NIGERIAN KITCHEN (EDMOND)", 
@@ -35,7 +38,81 @@ class _CheckInScreenState extends State<CheckInScreen> {
     "BIG O'S PORK & DREAMS (MWC)"
   ];
 
+  @override
+  void dispose() {
+    _receiptAmountController.dispose();
+    super.dispose();
+  }
+
+  void _showReceiptInputDialog(int selectedRestaurantIndex) {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Enter Receipt Amount'),
+          content: Column(
+            children: [
+              const SizedBox(height: 16),
+              CupertinoTextField(
+                controller: _receiptAmountController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                placeholder: 'Enter amount (e.g., 15.99)',
+                prefix: const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Text('\$'),
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: CupertinoColors.systemGrey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(8),
+              ),
+            ],
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                _receiptAmountController.clear();
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              onPressed: () {
+                if (_isValidAmount(_receiptAmountController.text)) {
+                  Navigator.pop(context);
+                  _handleCheckIn(selectedRestaurantIndex);
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isValidAmount(String value) {
+    if (value.isEmpty) return false;
+    try {
+      final amount = double.parse(value);
+      return amount > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
   void _handleCheckIn(int restaurantIndex) {
+    if (_lastPhotoPath == null) {
+      _showErrorMessage('Please take a photo before checking in.');
+      return;
+    }
+
+    // Capture the amount before any state changes
+    final receiptAmount = double.parse(_receiptAmountController.text);
+
     setState(() {
       _state.markRestaurant(restaurantIndex);
       
@@ -45,14 +122,47 @@ class _CheckInScreenState extends State<CheckInScreen> {
       }
     });
     
-    // Handle photo if one was taken
-    if (_lastPhotoPath != null) {
-      // TODO: Handle the photo (e.g., upload to Firebase Storage)
-      print('Check-in photo path: $_lastPhotoPath');
-      _lastPhotoPath = null; // Reset after handling
-    }
+    // Handle photo and receipt amount
+    print('Check-in photo path: $_lastPhotoPath');
+    print('Receipt amount: \$${receiptAmount.toStringAsFixed(2)}');
     
-    _showSuccessMessage(context);
+    // Show success message before clearing state
+    _showSuccessMessage(context, receiptAmount);
+    
+    // Reset state
+    _lastPhotoPath = null;
+    _receiptAmountController.clear();
+  }
+
+  void _showSuccessMessage(BuildContext context, double amount) {
+    final amountText = '\$${amount.toStringAsFixed(2)}';
+    
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Success'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text('Check-in recorded successfully!'),
+              ),
+              Text('Receipt amount: $amountText'),
+              const Text('Photo saved with check-in'),
+            ],
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showBingoAnimation() {
@@ -103,6 +213,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 
   void _showRestaurantSelectionDialog(BuildContext context) {
+    if (_lastPhotoPath == null) {
+      _showErrorMessage('Please take a photo first.');
+      return;
+    }
+
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
@@ -145,37 +260,24 @@ class _CheckInScreenState extends State<CheckInScreen> {
       },
     ).then((selectedIndex) {
       if (selectedIndex != null) {
-        _handleCheckIn(selectedIndex);
+        _showReceiptInputDialog(selectedIndex);
       }
     });
   }
 
-  void _showSuccessMessage(BuildContext context) {
+  void _showErrorMessage(String message) {
     showCupertinoDialog(
       context: context,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: const Text('Success'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Text('Check-in recorded successfully!'),
-              ),
-              if (_lastPhotoPath != null)
-                const Text('Photo saved with check-in'),
-            ],
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
           ),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -220,9 +322,12 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     child: const Text('Take Photo'),
                   ),
                   const SizedBox(height: 16),
-                  CupertinoButton(
-                    onPressed: () => _showRestaurantSelectionDialog(context),
-                    child: const Text('Check In Without Photo'),
+                  const Text(
+                    'Photo required for check-in',
+                    style: TextStyle(
+                      color: CupertinoColors.systemGrey,
+                      fontSize: 14,
+                    ),
                   ),
                   if (_lastPhotoPath != null)
                     Padding(
@@ -260,7 +365,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
                           Text('Check In', style: TextStyle(fontSize: 12)),
                         ],
                       ),
-                      onPressed: () => _showRestaurantSelectionDialog(context),
+                      onPressed: () {
+                        if (_lastPhotoPath == null) {
+                          _showErrorMessage('Please take a photo first.');
+                        } else {
+                          _showRestaurantSelectionDialog(context);
+                        }
+                      },
                     ),
                   ),
                   Container(
