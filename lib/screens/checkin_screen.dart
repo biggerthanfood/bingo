@@ -114,7 +114,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
     final receiptAmount = double.parse(_receiptAmountController.text);
 
     setState(() {
-      _state.markRestaurant(restaurantIndex);
+      _state.checkInRestaurant(restaurantIndex);
       
       if (_state.checkForBingo()) {
         _showBingoAnimation();

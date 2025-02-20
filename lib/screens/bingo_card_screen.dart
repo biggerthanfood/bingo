@@ -132,7 +132,40 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
   Widget _buildBingoMarker(int index) {
     bool isPartOfBingo = _state.getWinningLines().any((line) => line.contains(index));
     bool isBlackout = _state.checkedRestaurants.length == 25;
-    Color bingoColor = isBlackout ? Colors.black : (isPartOfBingo ? Colors.green : Colors.red);
+    bool isCheckedIn = _state.isCheckedIn(index);
+    bool isMarked = _state.isMarked(index);
+    
+    // Determine the color based on the restaurant's status
+    Color bingoColor;
+    if (isBlackout) {
+      bingoColor = Colors.black;
+    } else if (isCheckedIn) {
+      bingoColor = Colors.green;
+    } else if (isMarked) {
+      bingoColor = Colors.red;
+    } else {
+      // Default color for unmarked spaces
+      return Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade400, width: 2),
+        ),
+        child: Center(
+          child: Text(
+            restaurants[index],
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+
     String restaurantName = restaurants[index];
 
     return Stack(
@@ -186,8 +219,8 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
             ),
           ),
         ),
-        // Bingo indicator
-        if (isPartOfBingo && !isBlackout)
+        // Check-in indicator
+        if (isCheckedIn && !isBlackout)
           Positioned(
             top: 4,
             right: 4,
@@ -287,7 +320,7 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
                               ),
                             ),
                           ),
-                          if (_state.isCheckedIn(index))
+                          if (_state.isMarked(index) || _state.isCheckedIn(index))
                             Positioned.fill(
                               child: _buildBingoMarker(index),
                             ),
