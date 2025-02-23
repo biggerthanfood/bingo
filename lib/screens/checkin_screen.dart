@@ -116,16 +116,15 @@ class _CheckInScreenState extends State<CheckInScreen> {
     setState(() {
       _state.checkInRestaurant(restaurantIndex);
       
-      if (_state.checkForBingo()) {
-        _showBingoAnimation();
-        _state.setBingoShown();
+      if (_state.checkForBingo() && !_state.hasShownBingo) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showBingoAnimation();
+          _state.setBingoShown();
+        });
       }
     });
     
     // Handle photo and receipt amount
-    print('Check-in photo path: $_lastPhotoPath');
-    print('Receipt amount: \$${receiptAmount.toStringAsFixed(2)}');
-    
     // Show success message before clearing state
     _showSuccessMessage(context, receiptAmount);
     
