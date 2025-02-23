@@ -31,7 +31,7 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
     "HEAVENLEE BBQ (OKC)",
     "AUNTIES SOUL FOOD (MWC)", 
     "ANDEEZ DONUTS (EDMOND)",
-    "FREE SPACE", 
+    "", // Empty string for the free space
     "THE HIVE EATERY (EDMOND)", 
     "PINKBERRY FROZEN YOGURT (NORMAN)",
     "BIG O'S PORK & DREAMS (MWC)",
@@ -310,14 +310,19 @@ class _BingoCardScreenState extends State<BingoCardScreen> {
                           Center(
                             child: Padding(
                               padding: const EdgeInsets.all(4),
-                              child: Text(
-                                restaurants[index],
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: index == 12 ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
+                              child: index == 12 
+                                ? Image.asset(
+                                    'assets/images/icon.png',
+                                    fit: BoxFit.contain,
+                                  )
+                                : Text(
+                                    restaurants[index],
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: index == 12 ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
                             ),
                           ),
                           if (_state.isMarked(index) || _state.isCheckedIn(index))
