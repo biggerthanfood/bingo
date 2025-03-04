@@ -35,10 +35,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       
       try {
         await _authService.registerWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
+          _emailController.text.trim(),
+          _passwordController.text,
+          _firstNameController.text.trim(),
+          _lastNameController.text.trim(),
         );
         
         if (mounted) {

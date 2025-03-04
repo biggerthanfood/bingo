@@ -10,9 +10,8 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
   } catch (e) {
-    print('Error initializing Firebase: $e');
+    // Handle Firebase initialization error silently
   }
   
   runApp(const BingoApp());

@@ -4,15 +4,21 @@
 <dict>
     <!-- Camera permissions -->
     <key>NSCameraUsageDescription</key>
-    <string>We need camera access to take photos of restaurants during check-in</string>
+    <string>We need camera access to capture photos of your restaurant visits for check-ins</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>We need microphone access for camera functionality</string>
+    <string>Microphone access is required for full camera functionality</string>
 
     <!-- Photo library permissions -->
     <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>We need add only access to save medias</string>
+    <string>We need access to save your restaurant check-in photos</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>We need access to save medias</string>
+    <string>We need access to save your restaurant check-in photos</string>
+
+    <!-- Location permissions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Your location is used to find nearby restaurants and verify check-ins</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Your location helps us verify your restaurant visits and find nearby participating restaurants</string>
 
     <!-- Base configuration -->
     <key>CFBundleDevelopmentRegion</key>
@@ -44,19 +50,17 @@
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
         <string>UIInterfaceOrientationPortraitUpsideDown</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>
