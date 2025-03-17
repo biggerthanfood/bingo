@@ -443,6 +443,27 @@ def create_wrapper_script
   end
 end
 
+def add_firebase_script_phase
+  puts "🔧 Adding Firebase configuration script build phase..."
+  
+  # Run the script to add a Firebase build phase to the Xcode project
+  script_path = File.join(__dir__, "add_firebase_script_phase.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully added Firebase build phase to Xcode project"
+    else
+      puts "❌ Failed to add Firebase build phase"
+    end
+  else
+    puts "❌ Firebase build phase script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -480,6 +501,9 @@ begin
         
         # Create wrapper script - this provides an additional fallback
         create_wrapper_script
+        
+        # Add Firebase configuration script build phase - THIS IS THE NEW ADDITION
+        add_firebase_script_phase
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
@@ -520,9 +544,10 @@ begin
   system("#{__dir__}/xcode_cloud_fix.sh")
   puts "✅ Completed xcode_cloud_fix.sh"
 
+  # We no longer need this since we've added a build phase
   # Check for Firebase configuration file and create placeholder if needed
-  puts "🔍 Checking for Firebase configuration file..."
-  system("#{__dir__}/check_firebase_config.sh") or puts "⚠️ Failed to run Firebase configuration check"
+  # puts "🔍 Checking for Firebase configuration file..."
+  # system("#{__dir__}/check_firebase_config.sh") or puts "⚠️ Failed to run Firebase configuration check"
 
   puts "🎉 Post-clone script completed successfully"
   exit 0

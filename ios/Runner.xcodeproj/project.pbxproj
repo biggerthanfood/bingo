@@ -174,6 +174,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
+				F3CE5B21DBFB40FEB2B2F1E4 /* Generate Firebase Config */,
 				7F015D8C25351BEE039D2B4D /* Flutter Path Fix */,
 				B3FA17230B4998CD31CDE660 /* Run Flutter Path Fix */,
 				0E8DB9867B6EC0051A009144 /* [CP] Check Pods Manifest.lock */,
@@ -361,6 +362,25 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		F3CE5B21DBFB40FEB2B2F1E4 /* Generate Firebase Config */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Firebase Config";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Runner/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/sh\n\n# Script to generate GoogleService-Info.plist during build\n\n# Define target path for Firebase config file\nFIREBASE_CONFIG_PATH=\"${SRCROOT}/Runner/GoogleService-Info.plist\"\n\necho \"🔍 Checking for Firebase configuration at: ${FIREBASE_CONFIG_PATH}\"\n\n# 1. First try to use the environment variable if it exists\nif [ -n \"$FIREBASE_CONFIG_BASE64\" ]; then\n  echo \"🔐 Found Firebase configuration in environment variable, decoding...\"\n  echo \"$FIREBASE_CONFIG_BASE64\" | base64 --decode > \"${FIREBASE_CONFIG_PATH}\"\n  if [ $? -eq 0 ]; then\n    echo \"✅ Successfully created Firebase configuration from environment variable\"\n    exit 0\n  else\n    echo \"⚠️ Failed to decode Firebase configuration from environment variable\"\n  fi\nelse\n  echo \"⚠️ No Firebase configuration found in environment variable\"\nfi\n\n# 2. Check if file already exists (locally)\nif [ -f \"${FIREBASE_CONFIG_PATH}\" ]; then\n  echo \"✅ Firebase configuration file exists locally\"\n  # Make a copy to ensure it's fresh\n  cp \"${FIREBASE_CONFIG_PATH}\" \"${FIREBASE_CONFIG_PATH}.build\"\n  mv \"${FIREBASE_CONFIG_PATH}.build\" \"${FIREBASE_CONFIG_PATH}\"\n  exit 0\nfi\n\n# 3. Create a placeholder as last resort\necho \"⚠️ Firebase configuration file not found, creating placeholder...\"\n\n# Create a placeholder plist file that won't cause build errors\ncat > \"${FIREBASE_CONFIG_PATH}\" << 'EOF'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n  <key>CLIENT_ID</key>\n  <string>placeholder-client-id</string>\n  <key>REVERSED_CLIENT_ID</key>\n  <string>placeholder.reversed.client.id</string>\n  <key>API_KEY</key>\n  <string>placeholder-api-key</string>\n  <key>GCM_SENDER_ID</key>\n  <string>placeholder-gcm-sender-id</string>\n  <key>PLIST_VERSION</key>\n  <string>1</string>\n  <key>BUNDLE_ID</key>\n  <string>com.example.placeholder</string>\n  <key>PROJECT_ID</key>\n  <string>placeholder-project-id</string>\n  <key>STORAGE_BUCKET</key>\n  <string>placeholder-storage-bucket</string>\n  <key>IS_ADS_ENABLED</key>\n  <false/>\n  <key>IS_ANALYTICS_ENABLED</key>\n  <false/>\n  <key>IS_APPINVITE_ENABLED</key>\n  <false/>\n  <key>IS_GCM_ENABLED</key>\n  <false/>\n  <key>IS_SIGNIN_ENABLED</key>\n  <false/>\n  <key>GOOGLE_APP_ID</key>\n  <string>placeholder-app-id</string>\n</dict>\n</plist>\nEOF\n\necho \"✅ Created placeholder Firebase configuration file\"\nexit 0\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
