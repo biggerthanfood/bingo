@@ -674,6 +674,44 @@ def fix_direct_headers
   end
 end
 
+def convert_to_objc
+  puts "🔄 Converting Flutter app to use Objective-C AppDelegate instead of Swift..."
+  
+  # Run the conversion script
+  script_path = File.join(__dir__, "convert_to_objc.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully converted app to use Objective-C"
+      
+      # Fix the project file
+      fixer_script = File.join(__dir__, "improved_project_fixer.rb")
+      if File.exist?(fixer_script)
+        # Make sure the script is executable
+        FileUtils.chmod(0755, fixer_script)
+        
+        # Run the script
+        fixer_success = system("ruby #{fixer_script}")
+        if fixer_success
+          puts "✅ Successfully fixed Xcode project"
+        else
+          puts "❌ Failed to fix Xcode project"
+        end
+      else
+        puts "❌ Project fixer script not found at: #{fixer_script}"
+      end
+    else
+      puts "❌ Failed to convert app to Objective-C"
+    end
+  else
+    puts "❌ Conversion script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -738,6 +776,9 @@ begin
         
         # Execute direct header fix as final solution
         fix_direct_headers
+        
+        # Convert app to Objective-C as most aggressive solution
+        convert_to_objc
         
         # Run the simple fix again mid-process
         Dir.chdir("..") do
