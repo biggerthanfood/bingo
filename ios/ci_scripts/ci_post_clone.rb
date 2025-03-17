@@ -443,6 +443,10 @@ def create_wrapper_script
   end
 end
 
+# Set up Firebase configuration
+puts "📱 Setting up Firebase configuration..."
+load "#{__dir__}/setup_firebase.rb"
+
 begin
   # Navigate to the project directory
   Dir.chdir(ENV["CI_WORKSPACE"] || Dir.pwd) do
@@ -515,6 +519,10 @@ begin
   puts "Running xcode_cloud_fix.sh to fix hardcoded Flutter paths..."
   system("#{__dir__}/xcode_cloud_fix.sh")
   puts "✅ Completed xcode_cloud_fix.sh"
+
+  # Check for Firebase configuration file and create placeholder if needed
+  puts "🔍 Checking for Firebase configuration file..."
+  system("#{__dir__}/check_firebase_config.sh") or puts "⚠️ Failed to run Firebase configuration check"
 
   puts "🎉 Post-clone script completed successfully"
   exit 0
