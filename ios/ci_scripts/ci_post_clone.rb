@@ -523,6 +523,56 @@ def fix_swift_missing_header
   end
 end
 
+def add_xcode_prebuild_phase
+  puts "🔧 Adding Xcode pre-build script phase..."
+  
+  # First make sure the pre-build script is executable
+  prebuild_script = File.join(__dir__, "xcode_prebuild.sh")
+  if File.exist?(prebuild_script)
+    FileUtils.chmod(0755, prebuild_script)
+    puts "✅ Made pre-build script executable"
+    
+    # Now add the pre-build phase to the Xcode project
+    prebuild_phase_script = File.join(__dir__, "add_prebuild_phase.rb")
+    if File.exist?(prebuild_phase_script)
+      FileUtils.chmod(0755, prebuild_phase_script)
+      
+      # Run the script to add the pre-build phase
+      success = system("ruby #{prebuild_phase_script}")
+      if success
+        puts "✅ Successfully added pre-build phase to Xcode project"
+      else
+        puts "❌ Failed to add pre-build phase to Xcode project"
+      end
+    else
+      puts "❌ Add pre-build phase script not found at: #{prebuild_phase_script}"
+    end
+  else
+    puts "❌ Pre-build script not found at: #{prebuild_script}"
+  end
+end
+
+def fix_missing_header_direct
+  puts "🔧 Running direct fix for missing GeneratedPluginRegistrant.h..."
+  
+  # Run the direct fix script
+  script_path = File.join(__dir__, "fix_missing_header_direct.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully ran direct fix for missing header"
+    else
+      puts "❌ Failed to run direct fix for missing header"
+    end
+  else
+    puts "❌ Direct fix script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -567,8 +617,14 @@ begin
         # Fix Swift bridging header issues
         fix_swift_bridging
         
-        # Fix Swift missing header issue - THIS IS THE NEW ADDITION
+        # Fix Swift missing header issue 
         fix_swift_missing_header
+        
+        # Apply direct fix for missing headers
+        fix_missing_header_direct
+        
+        # Add pre-build script phase to Xcode project
+        add_xcode_prebuild_phase
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
