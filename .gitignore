@@ -54,6 +54,7 @@ migrate_working_dir/
 **/ios/**/DerivedData/
 **/ios/**/Icon?
 **/ios/**/Pods/
+!**/ios/**/Pods/Target\ Support\ Files/Pods-Runner/*.xcfilelist
 **/ios/**/.symlinks/
 **/ios/**/profile
 **/ios/**/xcuserdata
@@ -62,6 +63,7 @@ migrate_working_dir/
 **/ios/Flutter/Flutter.framework
 **/ios/Flutter/Flutter.podspec
 **/ios/Flutter/Generated.xcconfig
+!**/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/ephemeral
 **/ios/Flutter/app.flx
 **/ios/Flutter/app.zip
