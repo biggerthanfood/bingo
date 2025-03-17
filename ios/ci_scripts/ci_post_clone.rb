@@ -485,6 +485,44 @@ def fix_swift_bridging
   end
 end
 
+def fix_swift_missing_header
+  puts "🔧 Fixing Swift missing GeneratedPluginRegistrant.h issue..."
+  
+  # Run the script to fix missing headers issue
+  script_path = File.join(__dir__, "fix_swift_missing_header.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully fixed Swift missing header issue"
+      
+      # Now add a build phase to ensure headers are available during build
+      headers_phase_script = File.join(__dir__, "add_ensure_headers_phase.rb")
+      if File.exist?(headers_phase_script)
+        # Make sure the script is executable
+        FileUtils.chmod(0755, headers_phase_script)
+        
+        # Run the script
+        headers_success = system("ruby #{headers_phase_script}")
+        if headers_success
+          puts "✅ Successfully added ensure headers build phase"
+        else
+          puts "❌ Failed to add ensure headers build phase"
+        end
+      else
+        puts "❌ Add ensure headers phase script not found at: #{headers_phase_script}"
+      end
+    else
+      puts "❌ Failed to fix Swift missing header issue"
+    end
+  else
+    puts "❌ Swift missing header fix script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -526,8 +564,11 @@ begin
         # Add Firebase configuration script build phase
         add_firebase_script_phase
         
-        # Fix Swift bridging header issues - THIS IS THE NEW ADDITION
+        # Fix Swift bridging header issues
         fix_swift_bridging
+        
+        # Fix Swift missing header issue - THIS IS THE NEW ADDITION
+        fix_swift_missing_header
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
