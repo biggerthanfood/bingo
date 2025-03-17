@@ -181,7 +181,6 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
-				FE9A7E2E2B9C941500E37890 /* Fix Frameworks */,
 				D1B2171C722C47F0636DC598 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
@@ -324,24 +323,6 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		FE9A7E2E2B9C941500E37890 /* Fix Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Fix Frameworks";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/scripts/fix_frameworks.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
