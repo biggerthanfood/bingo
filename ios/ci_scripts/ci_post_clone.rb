@@ -7,8 +7,8 @@ require 'fileutils'
 require 'open-uri'
 require 'json'
 
-# Set Flutter version - using 3.7.10+ as recommended for Xcode compatibility
-FLUTTER_VERSION = "3.7.10"
+# Set Flutter version - using 3.7.12 as recommended for Xcode compatibility
+FLUTTER_VERSION = "3.7.12"
 FLUTTER_CHANNEL = "stable"
 
 # Define the path where Flutter will be installed
@@ -95,19 +95,32 @@ def fix_frameworks_scripts
     # Backup the original file
     FileUtils.cp(script_path, "#{script_path}.backup")
     
-    # Fix the symlink resolution more aggressively
+    # More comprehensive approach to fix framework scripts
+    
+    # Fix readlink issues
     content.gsub!(/source=\$\{source\}/, 'source="${source:-}"')
     content.gsub!(/source="\$\(readlink "\${source\}"(\)|)"/, 'source="$(readlink -f "${source:-}" 2>/dev/null || echo "${source:-}")"')
     content.gsub!(/binary="\$\{dirname\}\/\$\(readlink "\${binary\}"(\)|)"/, 'binary="${dirname}/$(readlink -f "${binary}" 2>/dev/null || echo "${binary}")"')
     
-    # Additional fix for readlink without -f flag
+    # Replace all instances of readlink without -f flag
     content.gsub!(/readlink ([^-])/, 'readlink -f \\1')
+    
+    # Fix for rsync issues
+    content.gsub!(/(rsync -av .*?)\"/, '\\1 --no-perms \"')
+    
+    # Add safeguards for non-existent files
+    content.gsub!(/if \[ -L "\$\{source\}" \]/, 'if [ -L "${source}" ] && [ -e "${source}" ]')
+    
+    # Make sure script fails gracefully
+    if !content.include?("set -e")
+      content = "#!/bin/sh\nset -e\n" + content.gsub(/^#!\/bin\/sh/, '')
+    end
     
     # Write the modified content back to the file
     File.write(script_path, content)
     
     # Make sure the script is executable
-    FileUtils.chmod("+x", script_path)
+    FileUtils.chmod(0755, script_path)
     
     puts "✅ Fixed: #{script_path}"
   end
@@ -167,12 +180,83 @@ def disable_user_script_sandboxing
   end
 end
 
+def fix_xcode_configurations
+  puts "🔧 Fixing Xcode configurations..."
+  
+  # Fix for incorrect configuration setup
+  # This ensures Debug/Release use the correct xcconfig files
+  info_plist = "Runner/Info.plist"
+  if File.exist?(info_plist)
+    project_path = "Runner.xcodeproj/project.pbxproj"
+    if File.exist?(project_path)
+      content = File.read(project_path)
+      
+      # Check and update Debug configuration
+      if content.include?("Pods-Runner.debug.xcconfig")
+        content.gsub!(/Pods-Runner.debug.xcconfig/, 'Debug.xcconfig')
+        puts "Fixed Debug configuration to use Debug.xcconfig"
+      end
+      
+      # Check and update Release configuration
+      if content.include?("Pods-Runner.release.xcconfig")
+        content.gsub!(/Pods-Runner.release.xcconfig/, 'Release.xcconfig')
+        puts "Fixed Release configuration to use Release.xcconfig"
+      end
+      
+      # Save changes
+      File.write(project_path, content)
+      puts "✅ Fixed Xcode configurations"
+    end
+  end
+end
+
+def clean_derived_data
+  puts "🧹 Cleaning derived data in CI environment..."
+  
+  # In CI environment, clear the derived data to avoid cached issues
+  derived_data = File.expand_path("~/Library/Developer/Xcode/DerivedData")
+  if Dir.exist?(derived_data)
+    puts "Removing derived data at: #{derived_data}"
+    # Use find command to safely delete content
+    system("find \"#{derived_data}\" -mindepth 1 -delete")
+    puts "✅ Cleared derived data"
+  else
+    puts "⚠️ Derived data directory not found"
+  end
+end
+
+def update_cocoapods_version
+  puts "🔄 Checking CocoaPods version..."
+  
+  # Get current CocoaPods version
+  pod_version = `pod --version`.strip
+  puts "Current CocoaPods version: #{pod_version}"
+  
+  # Check if we need to upgrade
+  if pod_version < "1.12.1"
+    puts "Upgrading CocoaPods to latest version..."
+    system("gem install cocoapods") or puts "⚠️ Failed to upgrade CocoaPods, continuing with current version"
+    
+    # Verify upgrade
+    pod_version = `pod --version`.strip
+    puts "CocoaPods version after upgrade: #{pod_version}"
+  else
+    puts "✅ CocoaPods version is sufficient"
+  end
+end
+
 begin
   # Navigate to the project directory
   Dir.chdir(ENV["CI_WORKSPACE"] || Dir.pwd) do
     puts "📂 Current directory: #{Dir.pwd}"
     puts "🔍 CI Environment: #{ENV["CI"] ? "Yes" : "No"}"
     puts "🔍 CI Workspace: #{ENV["CI_WORKSPACE"] || "Not set"}"
+    
+    # Update CocoaPods first
+    update_cocoapods_version
+    
+    # Clean derived data
+    clean_derived_data
     
     # Install Flutter
     download_and_install_flutter
@@ -189,8 +273,16 @@ begin
       Dir.chdir("ios") do
         puts "📂 Changed to iOS directory: #{Dir.pwd}"
         
-        # Disable User Script Sandboxing - now with more robust implementation
+        # First, try cleaning any previous pod installation
+        puts "🧹 Cleaning CocoaPods installation..."
+        FileUtils.rm_rf("Pods") if Dir.exist?("Pods")
+        FileUtils.rm("Podfile.lock") if File.exist?("Podfile.lock")
+        
+        # Disable User Script Sandboxing
         disable_user_script_sandboxing
+        
+        # Fix Xcode configurations
+        fix_xcode_configurations
         
         # Run CocoaPods installation with verbose output
         puts "📦 Installing CocoaPods dependencies..."
@@ -199,11 +291,15 @@ begin
         # Fix the frameworks scripts
         fix_frameworks_scripts
         
-        # Verify if the frameworks script is executable
+        # Verify permissions and existence of all scripts
         Dir.glob("Pods/Target Support Files/Pods-*/Pods-*-frameworks.sh").each do |script_path|
-          FileUtils.chmod("+x", script_path)
-          puts "✅ Verified executable permissions: #{script_path}"
+          FileUtils.chmod(0755, script_path)
+          puts "✅ Verified executable permissions: #{script_path} (#{sprintf('%o', File.stat(script_path).mode & 0777)})"
         end
+        
+        # Run pod install again to ensure everything is consistent
+        puts "🔄 Running pod install again to ensure consistency..."
+        system("pod install --verbose") or puts "⚠️ Second pod install failed, but continuing..."
       end
     else
       puts "❌ iOS directory not found"
