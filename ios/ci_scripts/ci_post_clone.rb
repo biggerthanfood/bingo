@@ -464,6 +464,27 @@ def add_firebase_script_phase
   end
 end
 
+def fix_swift_bridging
+  puts "🔧 Applying Swift bridging header fixes..."
+  
+  # Run the script to fix Swift bridging header issues
+  script_path = File.join(__dir__, "fix_swift_bridging.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully applied Swift bridging header fixes"
+    else
+      puts "❌ Failed to apply Swift bridging header fixes"
+    end
+  else
+    puts "❌ Swift bridging header fix script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -502,8 +523,11 @@ begin
         # Create wrapper script - this provides an additional fallback
         create_wrapper_script
         
-        # Add Firebase configuration script build phase - THIS IS THE NEW ADDITION
+        # Add Firebase configuration script build phase
         add_firebase_script_phase
+        
+        # Fix Swift bridging header issues - THIS IS THE NEW ADDITION
+        fix_swift_bridging
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
