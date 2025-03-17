@@ -573,6 +573,27 @@ def fix_missing_header_direct
   end
 end
 
+def remove_bridging_header_requirement
+  puts "🔧 Removing Swift bridging header requirement for CI builds..."
+  
+  # Run the script to remove bridging header
+  script_path = File.join(__dir__, "remove_bridging_header.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully removed bridging header requirement"
+    else
+      puts "❌ Failed to remove bridging header requirement"
+    end
+  else
+    puts "❌ Remove bridging header script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -625,6 +646,9 @@ begin
         
         # Add pre-build script phase to Xcode project
         add_xcode_prebuild_phase
+        
+        # Remove bridging header requirement - most drastic solution
+        remove_bridging_header_requirement
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
