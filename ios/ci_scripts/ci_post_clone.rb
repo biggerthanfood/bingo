@@ -245,6 +245,172 @@ def update_cocoapods_version
   end
 end
 
+def fix_flutter_path_in_project
+  puts "🔧 Fixing hardcoded Flutter path in Xcode project..."
+  
+  # Find the project.pbxproj file
+  project_file = "Runner.xcodeproj/project.pbxproj"
+  
+  if File.exist?(project_file)
+    puts "Found project file: #{project_file}"
+    
+    # Read the content
+    content = File.read(project_file)
+    
+    # Create backup
+    backup_file = "#{project_file}.path_backup"
+    if !File.exist?(backup_file)
+      FileUtils.cp(project_file, backup_file)
+    end
+    
+    # Find all Run Script phases and update the Flutter path
+    hardcoded_paths = [
+      "/Users/cameronperry/app_development/flutter/packages/flutter_tools/bin/xcode_backend.sh",
+      "/Users/cameronperry/app_development/flutter"
+    ]
+    
+    modified = false
+    
+    hardcoded_paths.each do |path|
+      if content.include?(path)
+        puts "Found hardcoded path: #{path}"
+        escaped_path = path.gsub('/', '\\/')
+        
+        # Replace in shell script sections
+        content.gsub!("\"#{path}", "\"$FLUTTER_ROOT")
+        content.gsub!("'#{path}", "'$FLUTTER_ROOT")
+        
+        # Replace in shellScript property assignments
+        content.gsub!(/(shellScript = .*?)#{escaped_path}/, "\\1$FLUTTER_ROOT")
+        
+        modified = true
+      end
+    end
+    
+    # Also find the specific script ID from the error message
+    script_id = "9740EEB61CF901F6004384FC"
+    if content.include?(script_id)
+      puts "Found script with ID: #{script_id}"
+      
+      # Find the script section for this ID
+      script_regex = /#{script_id}.*?shellScript = (.*?);/m
+      if content =~ script_regex
+        script_content = $1
+        
+        if script_content.include?("/Users/cameronperry")
+          # Replace the script content with a version that uses $FLUTTER_ROOT
+          new_script = script_content.gsub(/\/Users\/cameronperry\/app_development\/flutter/, "$FLUTTER_ROOT")
+          content.gsub!(script_content, new_script)
+          modified = true
+        end
+      end
+    end
+    
+    # Update the run script phases to use Flutter from the environment
+    content.gsub!(
+      /(shellScript = )".+xcode_backend\.sh(.+)"/,
+      '\1"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\2"'
+    )
+    
+    if modified
+      # Write the changes back to the file
+      File.write(project_file, content)
+      puts "✅ Fixed hardcoded Flutter paths in project file"
+    else
+      puts "⚠️ No hardcoded Flutter paths found to fix"
+    end
+  else
+    puts "❌ Project file not found"
+  end
+  
+  # Also fix any script files that might have hardcoded paths
+  Dir.glob("**/*.sh").each do |script_file|
+    if File.exist?(script_file)
+      script_content = File.read(script_file)
+      
+      if script_content.include?("/Users/cameronperry/app_development/flutter")
+        puts "Found hardcoded path in script: #{script_file}"
+        backup_file = "#{script_file}.path_backup"
+        if !File.exist?(backup_file)
+          FileUtils.cp(script_file, backup_file)
+        end
+        
+        script_content.gsub!("/Users/cameronperry/app_development/flutter", "$FLUTTER_ROOT")
+        File.write(script_file, script_content)
+        puts "✅ Fixed hardcoded Flutter path in script: #{script_file}"
+        
+        # Make sure script is executable
+        FileUtils.chmod(0755, script_file)
+      end
+    end
+  end
+end
+
+def create_wrapper_script
+  puts "🔧 Creating xcode_backend.sh wrapper script..."
+  
+  # Create a wrapper script in the expected location to forward to the actual Flutter script
+  run_script_dir = "scripts"
+  FileUtils.mkdir_p(run_script_dir)
+  
+  wrapper_script = File.join(run_script_dir, "xcode_backend.sh")
+  
+  # Create a script that will relay to the actual Flutter xcode_backend.sh
+  File.open(wrapper_script, "w") do |file|
+    file.puts "#!/bin/sh"
+    file.puts "# Wrapper script for Flutter's xcode_backend.sh"
+    file.puts "# This script forwards to the actual Flutter script with the current FLUTTER_ROOT"
+    file.puts ""
+    file.puts "# Echo debugging information"
+    file.puts "echo \"Running wrapper script: $0\""
+    file.puts "echo \"FLUTTER_ROOT: $FLUTTER_ROOT\""
+    file.puts "echo \"Arguments: $@\""
+    file.puts ""
+    file.puts "# Check if FLUTTER_ROOT is set"
+    file.puts "if [ -z \"$FLUTTER_ROOT\" ]; then"
+    file.puts "  echo \"Error: FLUTTER_ROOT is not set!\""
+    file.puts "  exit 1"
+    file.puts "fi"
+    file.puts ""
+    file.puts "# Check if the target script exists"
+    file.puts "SCRIPT_PATH=\"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\""
+    file.puts "if [ ! -f \"$SCRIPT_PATH\" ]; then"
+    file.puts "  echo \"Error: Flutter script not found at $SCRIPT_PATH!\""
+    file.puts "  ls -la \"$FLUTTER_ROOT/packages/flutter_tools/bin/\""
+    file.puts "  exit 1"
+    file.puts "fi"
+    file.puts ""
+    file.puts "# Execute the actual Flutter script with all arguments"
+    file.puts "echo \"Executing: $SCRIPT_PATH $@\""
+    file.puts "\"$SCRIPT_PATH\" \"$@\""
+    file.puts "EXIT_CODE=$?"
+    file.puts "echo \"Finished with exit code: $EXIT_CODE\""
+    file.puts "exit $EXIT_CODE"
+  end
+  
+  # Make the script executable
+  FileUtils.chmod(0755, wrapper_script)
+  
+  puts "✅ Created wrapper script: #{wrapper_script}"
+  
+  # Now modify the project file to use our wrapper script instead
+  project_file = "Runner.xcodeproj/project.pbxproj"
+  if File.exist?(project_file)
+    content = File.read(project_file)
+    
+    # Replace the script path in all build phases
+    if content.gsub!(
+      /"\$FLUTTER_ROOT\/packages\/flutter_tools\/bin\/xcode_backend\.sh"/,
+      "\"${SRCROOT}/../#{run_script_dir}/xcode_backend.sh\""
+    )
+      File.write(project_file, content)
+      puts "✅ Updated project to use wrapper script"
+    else
+      puts "⚠️ Could not update project to use wrapper script"
+    end
+  end
+end
+
 begin
   # Navigate to the project directory
   Dir.chdir(ENV["CI_WORKSPACE"] || Dir.pwd) do
@@ -272,6 +438,12 @@ begin
     if Dir.exist?("ios")
       Dir.chdir("ios") do
         puts "📂 Changed to iOS directory: #{Dir.pwd}"
+        
+        # Fix hardcoded Flutter paths - this addresses the specific error
+        fix_flutter_path_in_project
+        
+        # Create wrapper script - this provides an additional fallback
+        create_wrapper_script
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
