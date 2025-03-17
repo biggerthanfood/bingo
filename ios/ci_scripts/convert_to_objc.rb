@@ -9,10 +9,10 @@ require 'fileutils'
 puts "🔄 Converting Flutter app to use Objective-C AppDelegate instead of Swift..."
 
 # Paths
-WORKSPACE_PATH = '/Volumes/workspace'
-REPOSITORY_PATH = "#{WORKSPACE_PATH}/repository"
-IOS_PATH = "#{REPOSITORY_PATH}/ios"
-RUNNER_PATH = "#{IOS_PATH}/Runner"
+WORKSPACE_PATH = File.expand_path(File.join(__dir__, '..', '..'))
+REPOSITORY_PATH = File.join(WORKSPACE_PATH, 'ios')
+IOS_PATH = REPOSITORY_PATH
+RUNNER_PATH = File.join(IOS_PATH, 'Runner')
 
 # 1. Create Objective-C AppDelegate files
 APP_DELEGATE_H_CONTENT = <<-OBJC
@@ -64,23 +64,23 @@ OBJC
 puts "📝 Creating Objective-C AppDelegate files..."
 
 # 2. Create the header file
-app_delegate_h_path = "#{RUNNER_PATH}/AppDelegate.h"
+app_delegate_h_path = File.join(RUNNER_PATH, 'AppDelegate.h')
 File.write(app_delegate_h_path, APP_DELEGATE_H_CONTENT)
 puts "✅ Created AppDelegate.h at #{app_delegate_h_path}"
 
 # 3. Create the implementation file
-app_delegate_m_path = "#{RUNNER_PATH}/AppDelegate.m"
+app_delegate_m_path = File.join(RUNNER_PATH, 'AppDelegate.m')
 File.write(app_delegate_m_path, APP_DELEGATE_M_CONTENT)
 puts "✅ Created AppDelegate.m at #{app_delegate_m_path}"
 
 # 4. Create the main.m file
-main_m_path = "#{RUNNER_PATH}/main.m"
+main_m_path = File.join(RUNNER_PATH, 'main.m')
 File.write(main_m_path, MAIN_M_CONTENT)
 puts "✅ Created main.m at #{main_m_path}"
 
 # 5. Create a minimal GeneratedPluginRegistrant.h and .m
-plugin_registrant_h_path = "#{RUNNER_PATH}/GeneratedPluginRegistrant.h"
-plugin_registrant_m_path = "#{RUNNER_PATH}/GeneratedPluginRegistrant.m"
+plugin_registrant_h_path = File.join(RUNNER_PATH, 'GeneratedPluginRegistrant.h')
+plugin_registrant_m_path = File.join(RUNNER_PATH, 'GeneratedPluginRegistrant.m')
 
 PLUGIN_REGISTRANT_H_CONTENT = <<-OBJC
 //
@@ -177,7 +177,7 @@ puts "✅ Created GeneratedPluginRegistrant.m at #{plugin_registrant_m_path}"
 puts "🔧 Modifying Runner.xcodeproj to use Objective-C files instead of Swift..."
 
 # Find the project.pbxproj file
-project_file = "#{IOS_PATH}/Runner.xcodeproj/project.pbxproj"
+project_file = File.join(IOS_PATH, 'Runner.xcodeproj', 'project.pbxproj')
 if File.exist?(project_file)
   # Create a backup
   backup_file = "#{project_file}.swift_backup"
@@ -236,8 +236,8 @@ end
 
 # 7. Delete Swift files
 swift_files = [
-  "#{RUNNER_PATH}/AppDelegate.swift",
-  "#{RUNNER_PATH}/Runner-Bridging-Header.h"
+  File.join(RUNNER_PATH, 'AppDelegate.swift'),
+  File.join(RUNNER_PATH, 'Runner-Bridging-Header.h')
 ]
 
 swift_files.each do |file|
