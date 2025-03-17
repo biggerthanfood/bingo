@@ -712,6 +712,27 @@ def convert_to_objc
   end
 end
 
+def fix_runner_scheme
+  puts "🔧 Fixing Runner scheme for Xcode Cloud build..."
+  
+  # Run the script to fix the Runner scheme
+  script_path = File.join(__dir__, "fix_runner_scheme.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully fixed Runner scheme"
+    else
+      puts "❌ Failed to fix Runner scheme"
+    end
+  else
+    puts "❌ Runner scheme fix script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -722,6 +743,9 @@ begin
     puts "📂 Current directory: #{Dir.pwd}"
     puts "🔍 CI Environment: #{ENV["CI"] ? "Yes" : "No"}"
     puts "🔍 CI Workspace: #{ENV["CI_WORKSPACE"] || "Not set"}"
+    
+    # Fix Runner scheme - add this early in the process
+    fix_runner_scheme
     
     # Update CocoaPods first
     update_cocoapods_version
