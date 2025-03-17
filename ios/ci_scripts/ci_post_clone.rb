@@ -636,6 +636,44 @@ def install_build_hooks
   end
 end
 
+def fix_direct_headers
+  puts "🔧 Running direct header fix for GeneratedPluginRegistrant.h..."
+  
+  # Run the direct header fix script
+  script_path = File.join(__dir__, "direct_header_fix.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully ran direct header fix"
+      
+      # Add the build phase to the Xcode project
+      add_phase_script = File.join(__dir__, "add_direct_header_phase.rb")
+      if File.exist?(add_phase_script)
+        # Make sure the script is executable
+        FileUtils.chmod(0755, add_phase_script)
+        
+        # Run the script
+        phase_success = system("ruby #{add_phase_script}")
+        if phase_success
+          puts "✅ Successfully added direct header fix build phase"
+        else
+          puts "❌ Failed to add direct header fix build phase"
+        end
+      else
+        puts "❌ Add direct header phase script not found at: #{add_phase_script}"
+      end
+    else
+      puts "❌ Failed to run direct header fix"
+    end
+  else
+    puts "❌ Direct header fix script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -697,6 +735,9 @@ begin
         
         # Install build hooks into the Xcode project
         install_build_hooks
+        
+        # Execute direct header fix as final solution
+        fix_direct_headers
         
         # Run the simple fix again mid-process
         Dir.chdir("..") do
