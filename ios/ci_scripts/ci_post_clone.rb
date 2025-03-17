@@ -7,15 +7,15 @@ require 'fileutils'
 require 'open-uri'
 require 'json'
 
-# Set Flutter version - you can adjust this as needed
-FLUTTER_VERSION = "stable"
+# Set Flutter version - using 3.7.10+ as recommended for Xcode compatibility
+FLUTTER_VERSION = "3.7.10"
 FLUTTER_CHANNEL = "stable"
 
 # Define the path where Flutter will be installed
 FLUTTER_HOME = File.join(ENV["CI_WORKSPACE"] || Dir.pwd, "flutter")
 
 def download_and_install_flutter
-  puts "🔄 Installing Flutter SDK (#{FLUTTER_CHANNEL} channel)..."
+  puts "🔄 Installing Flutter SDK version #{FLUTTER_VERSION} (#{FLUTTER_CHANNEL} channel)..."
   
   # Create directory for Flutter
   FileUtils.mkdir_p(FLUTTER_HOME)
@@ -24,7 +24,14 @@ def download_and_install_flutter
   if RUBY_PLATFORM.include?("darwin")
     # macOS
     puts "📦 Downloading Flutter SDK for macOS..."
+    # Clone the repository and checkout the specific version
     system("git clone -b #{FLUTTER_CHANNEL} https://github.com/flutter/flutter.git #{FLUTTER_HOME}") or raise "Failed to download Flutter"
+    
+    # Move into Flutter directory and checkout the specific version
+    Dir.chdir(FLUTTER_HOME) do
+      system("git fetch --tags") or raise "Failed to fetch Flutter tags"
+      system("git checkout #{FLUTTER_VERSION}") or raise "Failed to checkout Flutter version #{FLUTTER_VERSION}"
+    end
   else
     raise "Unsupported platform for Flutter installation: #{RUBY_PLATFORM}"
   end
@@ -34,7 +41,7 @@ def download_and_install_flutter
   
   # Disable analytics and set up Flutter
   system("flutter config --no-analytics") or raise "Failed to configure Flutter"
-  system("flutter precache") or raise "Failed to precache Flutter"
+  system("flutter precache --ios") or raise "Failed to precache Flutter iOS artifacts"
   system("flutter doctor -v") or raise "Flutter doctor check failed"
   
   puts "✅ Flutter installed successfully at #{FLUTTER_HOME}"
@@ -88,10 +95,13 @@ def fix_frameworks_scripts
     # Backup the original file
     FileUtils.cp(script_path, "#{script_path}.backup")
     
-    # Fix the symlink resolution
+    # Fix the symlink resolution more aggressively
     content.gsub!(/source=\$\{source\}/, 'source="${source:-}"')
-    content.gsub!(/source="\$\(readlink "\${source\}"(\)|)"/, 'source="$(readlink -f "${source:-}" || echo "${source:-}")"')
-    content.gsub!(/binary="\$\{dirname\}\/\$\(readlink "\${binary\}"(\)|)"/, 'binary="${dirname}/$(readlink -f "${binary}" || echo "${binary}")"')
+    content.gsub!(/source="\$\(readlink "\${source\}"(\)|)"/, 'source="$(readlink -f "${source:-}" 2>/dev/null || echo "${source:-}")"')
+    content.gsub!(/binary="\$\{dirname\}\/\$\(readlink "\${binary\}"(\)|)"/, 'binary="${dirname}/$(readlink -f "${binary}" 2>/dev/null || echo "${binary}")"')
+    
+    # Additional fix for readlink without -f flag
+    content.gsub!(/readlink ([^-])/, 'readlink -f \\1')
     
     # Write the modified content back to the file
     File.write(script_path, content)
@@ -103,6 +113,39 @@ def fix_frameworks_scripts
   end
   
   puts "✅ All CocoaPods framework scripts have been fixed for Xcode Cloud"
+end
+
+def disable_user_script_sandboxing
+  puts "🔧 Disabling User Script Sandboxing in Xcode project..."
+  
+  # Find all .xcodeproj directories
+  Dir.glob("*.xcodeproj").each do |project_dir|
+    project_pbxproj = File.join(project_dir, "project.pbxproj")
+    
+    if File.exist?(project_pbxproj)
+      puts "Found Xcode project: #{project_dir}"
+      
+      # Read the project file
+      content = File.read(project_pbxproj)
+      
+      # Backup the original file
+      FileUtils.cp(project_pbxproj, "#{project_pbxproj}.backup")
+      
+      # Add USER_SCRIPT_SANDBOXING = NO to all build configurations
+      if content.include?("USER_SCRIPT_SANDBOXING")
+        # Replace existing setting
+        content.gsub!(/USER_SCRIPT_SANDBOXING = YES;/, 'USER_SCRIPT_SANDBOXING = NO;')
+      else
+        # Add the setting to each build configuration
+        content.gsub!(/(buildSettings = \{)/, "\\1\n\t\t\t\tUSER_SCRIPT_SANDBOXING = NO;")
+      end
+      
+      # Write the modified content back to the file
+      File.write(project_pbxproj, content)
+      
+      puts "✅ Disabled User Script Sandboxing in #{project_dir}"
+    end
+  end
 end
 
 begin
@@ -127,12 +170,21 @@ begin
       Dir.chdir("ios") do
         puts "📂 Changed to iOS directory: #{Dir.pwd}"
         
-        # Run CocoaPods installation
+        # Disable User Script Sandboxing
+        disable_user_script_sandboxing
+        
+        # Run CocoaPods installation with verbose output
         puts "📦 Installing CocoaPods dependencies..."
-        system("pod install") or raise "Failed to install pods"
+        system("pod install --verbose") or raise "Failed to install pods"
         
         # Fix the frameworks scripts
         fix_frameworks_scripts
+        
+        # Verify if the frameworks script is executable
+        Dir.glob("Pods/Target Support Files/Pods-*/Pods-*-frameworks.sh").each do |script_path|
+          FileUtils.chmod("+x", script_path)
+          puts "✅ Verified executable permissions: #{script_path}"
+        end
       end
     else
       puts "❌ iOS directory not found"
