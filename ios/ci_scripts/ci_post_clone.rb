@@ -594,6 +594,48 @@ def remove_bridging_header_requirement
   end
 end
 
+def run_simple_fix
+  puts "🔧 Running simple direct fix for GeneratedPluginRegistrant.h..."
+  
+  # Run the simple fix script
+  script_path = File.join(__dir__, "simple_fix.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully ran simple fix for GeneratedPluginRegistrant.h"
+    else
+      puts "❌ Failed to run simple fix script"
+    end
+  else
+    puts "❌ Simple fix script not found at: #{script_path}"
+  end
+end
+
+def install_build_hooks
+  puts "🔧 Installing build hooks to fix GeneratedPluginRegistrant.h..."
+  
+  # Run the script to install build hooks
+  script_path = File.join(__dir__, "install_hooks.rb")
+  if File.exist?(script_path)
+    # Make sure the script is executable
+    FileUtils.chmod(0755, script_path)
+    
+    # Run the script
+    success = system("ruby #{script_path}")
+    if success
+      puts "✅ Successfully installed build hooks"
+    else
+      puts "❌ Failed to install build hooks"
+    end
+  else
+    puts "❌ Install hooks script not found at: #{script_path}"
+  end
+end
+
 # Set up Firebase configuration
 puts "📱 Setting up Firebase configuration..."
 load "#{__dir__}/setup_firebase.rb"
@@ -620,6 +662,9 @@ begin
     # Run Flutter pub get
     puts "📦 Running flutter pub get..."
     system("flutter pub get") or raise "Failed to run flutter pub get"
+    
+    # Run simple fix early
+    run_simple_fix
     
     # Navigate to the iOS directory
     if Dir.exist?("ios")
@@ -649,6 +694,14 @@ begin
         
         # Remove bridging header requirement - most drastic solution
         remove_bridging_header_requirement
+        
+        # Install build hooks into the Xcode project
+        install_build_hooks
+        
+        # Run the simple fix again mid-process
+        Dir.chdir("..") do
+          run_simple_fix
+        end
         
         # First, try cleaning any previous pod installation
         puts "🧹 Cleaning CocoaPods installation..."
@@ -682,6 +735,9 @@ begin
       puts "❌ iOS directory not found"
       exit 1
     end
+    
+    # Run simple fix one more time after all modifications
+    run_simple_fix
   end
 
   # Run the xcode_cloud_fix.sh script to fix hardcoded Flutter paths
