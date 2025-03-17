@@ -56,6 +56,7 @@ migrate_working_dir/
 # Modified Pods exclusion to allow necessary files
 **/ios/**/Pods/*
 !**/ios/**/Pods/Manifest.lock
+!**/ios/**/Pods/Target Support Files/**/*.xcconfig
 !**/ios/**/Pods/Target Support Files/**/*.xcfilelist
 !**/ios/**/Pods/Target Support Files/**/Pods-Runner-frameworks.sh
 !**/ios/**/Pods/Headers
