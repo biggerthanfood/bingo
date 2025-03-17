@@ -9,6 +9,6 @@ FLUTTER_BUILD_NUMBER=1
 EXCLUDED_ARCHS[sdk=iphonesimulator*]=i386
 EXCLUDED_ARCHS[sdk=iphoneos*]=armv7
 DART_OBFUSCATION=false
-TRACK_WIDGET_CREATION=false
+TRACK_WIDGET_CREATION=true
 TREE_SHAKE_ICONS=false
-PACKAGE_CONFIG=/Users/cameronperry/app_development/flutter_projects/restaurant_bingo/.dart_tool/package_config.json
+PACKAGE_CONFIG=.dart_tool/package_config.json

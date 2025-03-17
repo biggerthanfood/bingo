@@ -53,8 +53,13 @@ migrate_working_dir/
 **/ios/**/.vagrant/
 **/ios/**/DerivedData/
 **/ios/**/Icon?
-**/ios/**/Pods/
-!**/ios/**/Pods/Target\ Support\ Files/Pods-Runner/*.xcfilelist
+# Modified Pods exclusion to allow necessary files
+**/ios/**/Pods/*
+!**/ios/**/Pods/Manifest.lock
+!**/ios/**/Pods/Target Support Files/**/*.xcfilelist
+!**/ios/**/Pods/Target Support Files/**/Pods-Runner-frameworks.sh
+!**/ios/**/Pods/Headers
+!**/ios/**/Pods/Local Podspecs
 **/ios/**/.symlinks/
 **/ios/**/profile
 **/ios/**/xcuserdata
@@ -63,6 +68,7 @@ migrate_working_dir/
 **/ios/Flutter/Flutter.framework
 **/ios/Flutter/Flutter.podspec
 **/ios/Flutter/Generated.xcconfig
+# Exception for Generated.xcconfig
 !**/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/ephemeral
 **/ios/Flutter/app.flx
