@@ -42,6 +42,36 @@ unless flutter_script_phase
   puts "⚠️ Warning: Could not find Flutter Run Script phase, will add at the beginning"
 end
 
+# Load the standalone fix script
+standalone_script_path = File.join(script_dir, 'standalone_fix.rb')
+standalone_script_content = File.read(standalone_script_path)
+
+# Create an inline script that doesn't depend on external files
+inline_script = <<~SCRIPT
+#!/bin/sh
+# Flutter Path Fix - Direct Script
+echo "Running inline Flutter path fix in Xcode build phase"
+
+# Create a temporary Ruby script file
+TEMP_SCRIPT_FILE=$(mktemp /tmp/flutter_fix_XXXXX.rb)
+
+# Write the script content to the temp file
+cat > "$TEMP_SCRIPT_FILE" << 'RUBYEOF'
+#{standalone_script_content}
+RUBYEOF
+
+# Make it executable
+chmod +x "$TEMP_SCRIPT_FILE"
+
+# Run the script
+ruby "$TEMP_SCRIPT_FILE"
+
+# Clean up
+rm "$TEMP_SCRIPT_FILE"
+
+echo "Completed inline Flutter path fix"
+SCRIPT
+
 # Check if our build phase already exists
 existing_phase = target.build_phases.find do |phase|
   phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) &&
@@ -49,16 +79,13 @@ existing_phase = target.build_phases.find do |phase|
 end
 
 if existing_phase
-  puts "ℹ️ Flutter Path Fix build phase already exists, skipping"
+  puts "ℹ️ Flutter Path Fix build phase already exists, updating script"
+  existing_phase.shell_script = inline_script
 else
   # Create our build phase
   fix_phase = target.new_shell_script_build_phase('Run Flutter Path Fix')
   fix_phase.shell_path = '/bin/sh'
-  fix_phase.shell_script = <<~SCRIPT
-    # Run the xcode_hook.rb script to fix Flutter paths
-    cd "${SRCROOT}/../ios/ci_scripts"
-    ruby xcode_hook.rb
-  SCRIPT
+  fix_phase.shell_script = inline_script
   
   # Move our phase before the Flutter build phases if we found it
   if flutter_script_phase
