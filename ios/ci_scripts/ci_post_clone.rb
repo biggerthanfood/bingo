@@ -118,7 +118,7 @@ end
 def disable_user_script_sandboxing
   puts "🔧 Disabling User Script Sandboxing in Xcode project..."
   
-  # Find all .xcodeproj directories
+  # Find all .xcodeproj directories in the current directory
   Dir.glob("*.xcodeproj").each do |project_dir|
     project_pbxproj = File.join(project_dir, "project.pbxproj")
     
@@ -131,19 +131,38 @@ def disable_user_script_sandboxing
       # Backup the original file
       FileUtils.cp(project_pbxproj, "#{project_pbxproj}.backup")
       
-      # Add USER_SCRIPT_SANDBOXING = NO to all build configurations
+      # More aggressive approach to disable sandboxing:
+      
+      # 1. Directly set USER_SCRIPT_SANDBOXING = NO in all build settings blocks
       if content.include?("USER_SCRIPT_SANDBOXING")
-        # Replace existing setting
         content.gsub!(/USER_SCRIPT_SANDBOXING = YES;/, 'USER_SCRIPT_SANDBOXING = NO;')
+        puts "Replaced existing USER_SCRIPT_SANDBOXING = YES with NO"
       else
         # Add the setting to each build configuration
         content.gsub!(/(buildSettings = \{)/, "\\1\n\t\t\t\tUSER_SCRIPT_SANDBOXING = NO;")
+        puts "Added USER_SCRIPT_SANDBOXING = NO to all build configurations"
+      end
+      
+      # 2. Also disable at the project level if possible
+      if content.include?("ENABLE_USER_SCRIPT_SANDBOXING")
+        content.gsub!(/ENABLE_USER_SCRIPT_SANDBOXING = YES;/, 'ENABLE_USER_SCRIPT_SANDBOXING = NO;')
       end
       
       # Write the modified content back to the file
       File.write(project_pbxproj, content)
       
       puts "✅ Disabled User Script Sandboxing in #{project_dir}"
+    end
+  end
+  
+  # Also look for xcconfig files that might contain the setting
+  Dir.glob("*.xcconfig").each do |config_file|
+    content = File.read(config_file)
+    if content.include?("USER_SCRIPT_SANDBOXING") || content.include?("ENABLE_USER_SCRIPT_SANDBOXING")
+      content.gsub!(/USER_SCRIPT_SANDBOXING\s*=\s*YES/, 'USER_SCRIPT_SANDBOXING = NO')
+      content.gsub!(/ENABLE_USER_SCRIPT_SANDBOXING\s*=\s*YES/, 'ENABLE_USER_SCRIPT_SANDBOXING = NO')
+      File.write(config_file, content)
+      puts "✅ Disabled User Script Sandboxing in #{config_file}"
     end
   end
 end
@@ -170,7 +189,7 @@ begin
       Dir.chdir("ios") do
         puts "📂 Changed to iOS directory: #{Dir.pwd}"
         
-        # Disable User Script Sandboxing
+        # Disable User Script Sandboxing - now with more robust implementation
         disable_user_script_sandboxing
         
         # Run CocoaPods installation with verbose output
